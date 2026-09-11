@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pattern Finder by Yut</title>
+<style>
+  :root{
+    --ink:#1c2b24;
+    --paper:#f6f3ea;
+    --rule:#c9c1a8;
+    --pine:#2f5d4f;
+    --pine-dark:#20423a;
+    --amber:#b5762a;
+    --card:#fffdf7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Georgia','Iowan Old Style',serif;
+    line-height:1.5;
+    padding:20px 16px 60px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+
+  header{
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+  }
+  header h1{
+    font-size:1.6rem;
+    margin:0 0 4px;
+    letter-spacing:-0.01em;
+    font-weight:700;
+  }
+  header p{
+    margin:0;
+    font-size:0.92rem;
+    color:#54604f;
+    font-family:-apple-system,system-ui,sans-serif;
+  }
+
+  .input-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  input[type=text]{
+    flex:1;
+    padding:12px 14px;
+    font-size:1rem;
+    border:2px solid var(--ink);
+    border-radius:3px;
+    background:var(--card);
+    font-family:-apple-system,system-ui,sans-serif;
+    color:var(--ink);
+  }
+  input[type=text]:focus{
+    outline:none;
+    border-color:var(--pine);
+  }
+  button{
+    padding:12px 18px;
+    font-size:1rem;
+    font-weight:600;
+    background:var(--pine);
+    color:var(--paper);
+    border:none;
+    border-radius:3px;
+    cursor:pointer;
+    font-family:-apple-system,system-ui,sans-serif;
+  }
+  button:active{background:var(--pine-dark);}
+
+  .hint{
+    font-size:0.8rem;
+    color:#7a7362;
+    margin-bottom:20px;
+    font-family:-apple-system,system-ui,sans-serif;
+  }
+
+  .examples{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:26px;
+  }
+  .chip{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:0.78rem;
+    padding:5px 10px;
+    background:transparent;
+    border:1px solid var(--rule);
+    border-radius:20px;
+    color:#54604f;
+    cursor:pointer;
+  }
+  .chip:active{background:var(--rule);}
+
+  #results{min-height:20px;}
+
+  .empty-state{
+    font-size:0.9rem;
+    color:#8a8371;
+    font-family:-apple-system,system-ui,sans-serif;
+    padding:20px 0;
+    border-top:1px dashed var(--rule);
+  }
+
+  .result-card{
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-left:4px solid var(--pine);
+    border-radius:2px;
+    padding:16px 18px;
+    margin-bottom:12px;
+  }
+  .result-card.no-match{
+    border-left-color:var(--amber);
+  }
+  .result-name{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--pine);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .result-explanation{
+    font-size:0.95rem;
+    color:#3a4a3f;
+    margin-bottom:10px;
+  }
+  .result-next{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:1.05rem;
+    font-weight:700;
+    color:var(--ink);
+  }
+  .result-next span{
+    color:var(--pine);
+    font-size:1.3rem;
+  }
+
+  .guide{
+    margin-top:36px;
+    padding-top:20px;
+    border-top:2px solid var(--ink);
+  }
+  .guide h2{
+    font-size:1.1rem;
+    margin:0 0 14px;
+  }
+  .guide ol{
+    padding-left:20px;
+    margin:0;
+  }
+  .guide li{
+    margin-bottom:10px;
+    font-size:0.93rem;
+  }
+  .guide li b{color:var(--pine-dark);}
+
+  details{
+    margin-top:28px;
+  }
+  summary{
+    font-family:-apple-system,system-ui,sans-serif;
+    font-size:0.85rem;
+    font-weight:600;
+    color:#54604f;
+    cursor:pointer;
+    padding:10px 0;
+    border-top:1px solid var(--rule);
+    list-style:none;
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary::before{
+    content:"+ ";
+    color:var(--pine);
+    font-weight:700;
+  }
+  details[open] summary::before{
+    content:"− ";
+  }
+  details[open] summary{
+    color:var(--ink);
+  }
+  details .examples{
+    margin-top:14px;
+  }
+  details .guide{
+    border-top:none;
+    padding-top:0;
+    margin-top:24px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Pattern Finder</h1>
+    <p>Type a number sequence. It checks common exam rules and predicts what's next.</p>
+  </header>
+
+  <div class="input-row">
+    <input type="text" id="seqInput" placeholder="e.g. 2, 5, 8, 11, 14" inputmode="numeric" autocomplete="off">
+    <button onclick="runSolver()">Solve</button>
+  </div>
+  <div class="hint">Separate numbers with commas or spaces. Works with negative and decimal numbers.</div>
+
+  <div id="results">
+    <div class="empty-state">Enter a sequence above and tap Solve to see which patterns fit.</div>
+  </div>
+
+  <details>
+    <summary>More features</summary>
+
+    <div class="examples">
+      <button class="chip" onclick="loadExample('2, 5, 8, 11, 14')">2, 5, 8, 11, 14</button>
+      <button class="chip" onclick="loadExample('3, 6, 12, 24, 48')">3, 6, 12, 24, 48</button>
+      <button class="chip" onclick="loadExample('1, 2, 4, 7, 11')">1, 2, 4, 7, 11</button>
+      <button class="chip" onclick="loadExample('1, 10, 2, 9, 3, 8')">1, 10, 2, 9, 3, 8</button>
+      <button class="chip" onclick="loadExample('1, 1, 2, 3, 5, 8')">1, 1, 2, 3, 5, 8</button>
+      <button class="chip" onclick="loadExample('2, 5, 11, 23, 47')">2, 5, 11, 23, 47</button>
+    </div>
+
+    <div class="guide">
+      <h2>How to solve these by hand</h2>
+      <ol>
+        <li><b>Find the differences</b> between consecutive terms. All equal → arithmetic, done.</li>
+        <li><b>If not constant, take differences of the differences.</b> Constant at that level → a 2nd‑order pattern, often related to squares.</li>
+        <li><b>Check the ratios</b> (each term divided by the one before). Constant ratio → geometric.</li>
+        <li><b>Try a rule like ×a + b.</b> Solve for a and b from the first three terms, then check it holds for the rest.</li>
+        <li><b>Split into odd and even positions.</b> Many sequences are two simple patterns woven together.</li>
+        <li><b>Check if each term is the sum of the previous two or three</b> (Fibonacci-style).</li>
+        <li><b>Compare to known families:</b> squares, cubes, primes.</li>
+      </ol>
+    </div>
+  </details>
+
+</div>
+
+<script>
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+
+class Frac {
+  constructor(n, d = 1) {
+    if (d < 0) { n = -n; d = -d; }
+    const g = gcd(n, d);
+    this.n = g ? n / g : n;
+    this.d = g ? d / g : d;
+  }
+  add(o) { return new Frac(this.n * o.d + o.n * this.d, this.d * o.d); }
+  sub(o) { return new Frac(this.n * o.d - o.n * this.d, this.d * o.d); }
+  mul(o) { return new Frac(this.n * o.n, this.d * o.d); }
+  div(o) { return new Frac(this.n * o.d, this.d * o.n); }
+  eq(o) { return this.n === o.n && this.d === o.d; }
+  isZero() { return this.n === 0; }
+  toString() {
+    if (this.d === 1) return `${this.n}`;
+    return `${(this.n / this.d).toFixed(4).replace(/0+$/,'').replace(/\.$/,'')}`;
+  }
+  toDisplay() {
+    if (this.d === 1) return `${this.n}`;
+    const dec = this.n / this.d;
+    return Number.isInteger(dec) ? `${dec}` : dec.toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+  }
+}
+
+function toFrac(x) {
+  if (Number.isInteger(x)) return new Frac(x, 1);
+  // handle decimals by scaling
+  const str = x.toString();
+  const parts = str.split('.');
+  if (parts.length === 2) {
+    const scale = Math.pow(10, parts[1].length);
+    return new Frac(Math.round(x * scale), scale);
+  }
+  return new Frac(x, 1);
+}
+
+function allEqual(arr, eqFn) {
+  for (let i = 1; i < arr.length; i++) if (!eqFn(arr[i], arr[0])) return false;
+  return true;
+}
+
+// --- Pattern checks, mirroring the Python version ---
+
+function checkArithmetic(seq) {
+  if (seq.length < 2) return null;
+  const diffs = [];
+  for (let i = 0; i < seq.length - 1; i++) diffs.push(seq[i+1].sub(seq[i]));
+  if (allEqual(diffs, (a,b) => a.eq(b))) {
+    const d = diffs[0];
+    const nxt = seq[seq.length-1].add(d);
+    return {
+      name: "Arithmetic",
+      explanation: `Constant difference of ${d.toDisplay()}. Next = ${seq[seq.length-1].toDisplay()} + ${d.toDisplay()}.`,
+      next: nxt
+    };
+  }
+  return null;
+}
+
+function checkGeometric(seq) {
+  if (seq.length < 2) return null;
+  if (seq.slice(0, -1).some(x => x.isZero())) return null;
+  const ratios = [];
+  for (let i = 0; i < seq.length - 1; i++) ratios.push(seq[i+1].div(seq[i]));
+  if (allEqual(ratios, (a,b) => a.eq(b))) {
+    const r = ratios[0];
+    const nxt = seq[seq.length-1].mul(r);
+    return {
+      name: "Geometric",
+      explanation: `Constant ratio of ${r.toDisplay()}. Next = ${seq[seq.length-1].toDisplay()} × ${r.toDisplay()}.`,
+      next: nxt
+    };
+  }
+  return null;
+}
+
+function checkSecondDifference(seq) {
+  if (seq.length < 3) return null;
+  const diffs = [];
+  for (let i = 0; i < seq.length - 1; i++) diffs.push(seq[i+1].sub(seq[i]));
+  const second = [];
+  for (let i = 0; i < diffs.length - 1; i++) second.push(diffs[i+1].sub(diffs[i]));
+  if (second.length >= 1 && allEqual(second, (a,b) => a.eq(b))) {
+    const d2 = second[0];
+    const nextDiff = diffs[diffs.length-1].add(d2);
+    const nxt = seq[seq.length-1].add(nextDiff);
+    return {
+      name: "Second difference",
+      explanation: `The differences (${diffs.map(d=>d.toDisplay()).join(', ')}) increase by a constant ${d2.toDisplay()} each time. Next difference = ${nextDiff.toDisplay()}, so next term = ${seq[seq.length-1].toDisplay()} + ${nextDiff.toDisplay()}.`,
+      next: nxt
+    };
+  }
+  return null;
+}
+
+function checkAlternating(seq) {
+  if (seq.length < 4) return null;
+  const odds = seq.filter((_,i) => i % 2 === 0);
+  const evens = seq.filter((_,i) => i % 2 === 1);
+  function constDiff(sub) {
+    if (sub.length < 2) return null;
+    const d = [];
+    for (let i = 0; i < sub.length - 1; i++) d.push(sub[i+1].sub(sub[i]));
+    return allEqual(d, (a,b)=>a.eq(b)) ? d[0] : null;
+  }
+  const dOdd = constDiff(odds);
+  const dEven = constDiff(evens);
+  if (dOdd !== null && dEven !== null) {
+    let nxt;
+    if (seq.length % 2 === 0) nxt = odds[odds.length-1].add(dOdd);
+    else nxt = evens[evens.length-1].add(dEven);
+    return {
+      name: "Alternating / interleaved",
+      explanation: `Two sequences woven together — positions 1,3,5... go ${odds.map(x=>x.toDisplay()).join(', ')} (diff ${dOdd.toDisplay()}); positions 2,4,6... go ${evens.map(x=>x.toDisplay()).join(', ')} (diff ${dEven.toDisplay()}).`,
+      next: nxt
+    };
+  }
+  return null;
+}
+
+function checkFibonacci(seq) {
+  if (seq.length < 3) return null;
+  for (let i = 0; i < seq.length - 2; i++) {
+    if (!seq[i].add(seq[i+1]).eq(seq[i+2])) return null;
+  }
+  const nxt = seq[seq.length-2].add(seq[seq.length-1]);
+  return {
+    name: "Fibonacci-style",
+    explanation: `Each term is the sum of the previous two. Next = ${seq[seq.length-2].toDisplay()} + ${seq[seq.length-1].toDisplay()}.`,
+    next: nxt
+  };
+}
+
+function checkLinearRecurrence(seq) {
+  if (seq.length < 4) return null;
+  const x0 = seq[0], x1 = seq[1], x2 = seq[2];
+  const denom = x1.sub(x0);
+  if (denom.isZero()) return null;
+  const a = x2.sub(x1).div(denom);
+  const b = x1.sub(a.mul(x0));
+  for (let i = 0; i < seq.length - 1; i++) {
+    if (!seq[i].mul(a).add(b).eq(seq[i+1])) return null;
+  }
+  const nxt = seq[seq.length-1].mul(a).add(b);
+  return {
+    name: "Linear recurrence (×a + b)",
+    explanation: `Each term follows next = ${a.toDisplay()} × term + ${b.toDisplay()}.`,
+    next: nxt
+  };
+}
+
+function checkPolynomialFit(seq, maxDegree = 3) {
+  const n = seq.length;
+  if (n < 4) return null;
+  let levels = [seq.slice()];
+  let current = seq.slice();
+  for (let level = 0; level < Math.min(maxDegree, n - 1); level++) {
+    const next = [];
+    for (let i = 0; i < current.length - 1; i++) next.push(current[i+1].sub(current[i]));
+    levels.push(next);
+    current = next;
+    if (current.length >= 2 && allEqual(current, (a,b)=>a.eq(b))) {
+      // extend levels forward by one using constant last level
+      const extended = levels.map(l => l.slice());
+      extended[extended.length-1].push(extended[extended.length-1][extended[extended.length-1].length-1]);
+      for (let lvl = extended.length - 2; lvl >= 0; lvl--) {
+        const lastThis = extended[lvl][extended[lvl].length-1];
+        const lastNext = extended[lvl+1][extended[lvl+1].length-1];
+        extended[lvl].push(lastThis.add(lastNext));
+      }
+      const nxt = extended[0][extended[0].length-1];
+      return {
+        name: "Polynomial pattern",
+        explanation: `Differences become constant (${current[0].toDisplay()}) at level ${level+1}. Often seen with squares/cubes.`,
+        next: nxt
+      };
+    }
+  }
+  return null;
+}
+
+function parseSequence(str) {
+  const parts = str.split(/[\s,]+/).filter(s => s.length > 0);
+  const nums = [];
+  for (const p of parts) {
+    const v = parseFloat(p);
+    if (isNaN(v)) return null;
+    nums.push(v);
+  }
+  return nums;
+}
+
+function loadExample(str) {
+  document.getElementById('seqInput').value = str;
+  runSolver();
+}
+
+function runSolver() {
+  const raw = document.getElementById('seqInput').value.trim();
+  const resultsEl = document.getElementById('results');
+
+  if (!raw) {
+    resultsEl.innerHTML = '<div class="empty-state">Enter a sequence above and tap Solve to see which patterns fit.</div>';
+    return;
+  }
+
+  const nums = parseSequence(raw);
+  if (!nums || nums.length < 2) {
+    resultsEl.innerHTML = '<div class="empty-state">Couldn\'t read that as a sequence. Try numbers separated by commas, e.g. 2, 5, 8, 11.</div>';
+    return;
+  }
+
+  const seq = nums.map(toFrac);
+  const checks = [
+    checkArithmetic,
+    checkGeometric,
+    checkSecondDifference,
+    checkAlternating,
+    checkFibonacci,
+    checkLinearRecurrence,
+    checkPolynomialFit
+  ];
+
+  const found = [];
+  for (const fn of checks) {
+    try {
+      const r = fn(seq);
+      if (r) found.push(r);
+    } catch (e) { /* skip */ }
+  }
+
+  if (found.length === 0) {
+    resultsEl.innerHTML = `
+      <div class="result-card no-match">
+        <div class="result-name">No standard pattern matched</div>
+        <div class="result-explanation">Try manually: check differences, ratios, alternating positions, or compare against squares, cubes, or primes.</div>
+      </div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = found.map(r => `
+    <div class="result-card">
+      <div class="result-name">${r.name}</div>
+      <div class="result-explanation">${r.explanation}</div>
+      <div class="result-next">Next number: <span>${r.next.toDisplay()}</span></div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('seqInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') runSolver();
+});
+</script>
+</body>
+</html>
